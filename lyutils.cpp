@@ -1,6 +1,5 @@
 // $Id: lyutils.cpp,v 1.11 2016-10-06 16:42:53-07 - - $
 
-#include <assert.h>
 #include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
