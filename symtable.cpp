@@ -32,8 +32,10 @@ symbol* create_symbol(astree* node){
 }
 
 insert_symbol(symbol_table* sym_table, astree* node){
-
-    sym_table->insert(symbol_entry(node->lexinfo,node->symbol))
+    if(sym_table != nullptr && node != nullptr){
+        sym = create_symbol(node); 
+        sym_table->insert(symbol_entry(node->lexinfo,sym));
+    }
 }
 
 void enter_block(){
@@ -47,6 +49,7 @@ void exit_block(){
 }
 
 void define_ident(*astree node){
+    
     if(symbol_stack.back() == nullptr){
         symbol_stack.back() = new symbol_table; 
     }
