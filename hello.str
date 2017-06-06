@@ -1,0 +1,9 @@
+string_set[   2]:    8545990094689704659 0x17d7178->"puts"
+string_set[   3]:   15816506932648033945 0x17d7378->"("
+string_set[   4]:    5344662657899890615 0x17dba78->";"
+                    8231216274321885541 0x17db958->""Hello, world!\n""
+string_set[   6]:    6142509188972423790 0x17d7398->""
+string_set[   7]:   12868445110721718657 0x17db9f8->")"
+load_factor = 0.545
+bucket_count = 11
+max_bucket_size = 2

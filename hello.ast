@@ -1,0 +1,4 @@
+TOK_ROOT "" 0.1.0
+|   TOK_CALL "(" 5.6.6
+|   |   TOK_IDENT "puts" 5.6.1
+|   |   TOK_STRINGCON ""Hello, world!\n"" 5.6.7
