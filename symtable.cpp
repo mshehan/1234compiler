@@ -55,3 +55,63 @@ void define_ident(*astree node){
     }
     insert_symbol(symbol_table.back(), node); 
 }
+
+
+
+
+void check_type(FILE* out_file, astre* node){
+
+    astree* = right;
+    astree* = left;
+    symbol* = sym; 
+     if (node->children.size() > 0) {
+        left = node->children[0];
+    }
+    if (node->children.size() > 1) {
+        right = node->children[1];
+    }
+    switch(node->symbol){
+        
+        TOK_VOID:
+            left->attribute.set(ATTR_void);
+            break;
+
+        TOK_INT:
+            if(left == nullptr){
+                left->attribute.set(ATTR_int);
+            }
+            inhert_type(node,left); 
+             break;
+        TOK_GT:
+        TOK_GE:
+        TOK_LE:
+        TOK_LT:
+        TOK_EQ: 
+            if(check_primitive(left,right)){
+                node->attribute.set(ATTR_int); 
+            }else{
+                //print error
+            }
+
+            break; 
+        TOK_NULL:
+            node->attribute.set(ATTR_null); 
+            node->attribute.set(ATTR_const); 
+            break;
+        
+        
+        INTCON:
+        CHARCON: 
+            node->attribute.set(ATTR_int); 
+            node->attribute.set(ATTR_const); 
+            break; 
+        STRINGCON:
+            node->attribute.set(ATTR_string);
+            node->attribute.set(ATTR_const); 
+
+       
+
+
+    }
+
+}
