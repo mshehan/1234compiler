@@ -38,6 +38,7 @@ insert_symbol(symbol_table* sym_table, astree* node){
     }
 }
 
+/*symbol stack functions */ 
 void enter_block(){
     next_block++;
     symbol_stack.push_back(nullptr);  
@@ -56,60 +57,176 @@ void define_ident(*astree node){
     insert_symbol(symbol_table.back(), node); 
 }
 
-
+symbol* find_ident(astree* node){
+    symbol* sym = nullptr
+    if(!symbol_stack.empty()){
+        
+        for(auto table = symbol_stack.begin(); table != symbol_stack.end(); ++table){
+            if(*table != nullptr ){
+                if(table->count(node->lexinfo) > 0 ){
+                    sym = table->find(node->lexinfo)->second; 
+                }
+            }
+        }
+    }
+    return sym; 
+}
+/**/ 
+bool check_primative_type(astree* node){
+    bool flag = false; 
+    for(auto i = 0; i < ATTR_function;i++){
+        if(node->attributes[i] == 1){
+            flag = true; 
+            break; 
+        }
+    }
+    return flag; 
+}
+void inherit_child_type(astree* parent, astree* child){
+    for(auto i = 0; i < ATTR_function; i++){
+        if(child->attributes[i] == 1){
+            parent->attributes.set(i); 
+        }
+    } 
+}
 
 
 void check_type(FILE* out_file, astre* node){
 
-    astree* = right;
-    astree* = left;
-    symbol* = sym; 
+    astree* right;
+    astree* left;
+    symbol* sym; 
      if (node->children.size() > 0) {
         left = node->children[0];
     }
     if (node->children.size() > 1) {
         right = node->children[1];
     }
-    switch(node->symbol){
-        
-        TOK_VOID:
-            left->attribute.set(ATTR_void);
-            break;
 
+    //we must switch to handle for different symbols
+    switch(node->symbol){    
+        TOK_VOID:
+            left->attributes.set(ATTR_void);
+            break;
+        //integers and characters are treated the same way
+        TOK_CHAR:
         TOK_INT:
-            if(left == nullptr){
-                left->attribute.set(ATTR_int);
+            if(left != nullptr){
+                left->attributes.set(ATTR_int);
+                inherit_child_type(node,left); 
             }
-            inhert_type(node,left); 
              break;
+        TOK_STRING:
+            if(left != nullptr){
+                left->attributes.set(ATTR_string);
+                inherit_child_type(node,left); 
+            }
+            break;
+        TOK_NEWSTRING:
+            node->attributes.set(ATTR_string);
+            node->attribuites.set(ATTR_vreg); 
+            break;
+        TOK_STRUCT:
+            left->attributes.set(ATTR_struct);
+            insert_symbol(types,left);
+            symbol* sym = find_ident(left);
+            if(sym == nullptr){
+                sym->fields = new symbol_table;
+                for(auto iter = node->children.begin()+1; iter != node->children.end(); ++iter){
+                    sym->fields.insert_symbol(*iter);
+                }
+            } 
+            break;
+        TOK_NULL:
+            node->attributes.set(ATTR_null); 
+            node->attributes.set(ATTR_const); 
+            break;
+        TOK_NEW:
+            inherit_child_type(node,left);
+            break;
+        
+        TOK_ARRAY:
+            
+            break;
+        TOK_DECLID:
+            break;
+        TOK_VARDECL: 
+            break;
         TOK_GT:
         TOK_GE:
         TOK_LE:
+        TOK_NE:
         TOK_LT:
         TOK_EQ: 
             if(check_primitive(left,right)){
-                node->attribute.set(ATTR_int); 
+                node->attributes.set(ATTR_int); 
+                node->attributes.set(ATTR_vreg); 
             }else{
                 //print error
             }
 
             break; 
-        TOK_NULL:
-            node->attribute.set(ATTR_null); 
-            node->attribute.set(ATTR_const); 
+        TOK_IDENT: 
             break;
-        
-        
         INTCON:
         CHARCON: 
-            node->attribute.set(ATTR_int); 
-            node->attribute.set(ATTR_const); 
+            node->attributes.set(ATTR_int); 
+            node->attributes.set(ATTR_const); 
             break; 
-        STRINGCON:
-            node->attribute.set(ATTR_string);
-            node->attribute.set(ATTR_const); 
-
-       
+        TOK_STRINGCON:
+            node->attributes.set(ATTR_string);
+            node->attributes.set(ATTR_const); 
+            break;  
+        TOK_IF:
+        TOK_IFELSE:
+        TOK_WHILE:
+            if(!left.attributes[ATTR_int]){
+                //print an error 
+            }
+            break;
+        TOK_RETURN:
+            
+            //???????
+            break;  
+        TOK_ELSE:
+            break; 
+        TOK_BLOCK: 
+            break;
+        TOK_CALL: 
+            break;
+        TOK_INITDECL:
+            break;
+        TOK_RETURNVOID:
+            break;
+        TOK_INDEX:
+            break;
+        TOK_POS:
+            break;
+        TOK_NEG:
+            break;
+        TOK_NEWARRAY:
+            node->attributes.set(ATTR_array);
+            node->attributes.set(ATTR_vreg);
+            inherit_child_type(node,left); 
+            break;
+        TOK_TYPEID:
+            break;
+        TOK_FIELD:
+            break;
+        TOK_ORD:
+            break;
+        TOK_CHR:
+            break;
+        TOK_ROOT: 
+            break;
+        TOK_FUNCTION:
+            break;
+        TOK_PARAMLIST: 
+            break;
+        TOK_PROTOTYPE: 
+            break; 
+        
+        
 
 
     }

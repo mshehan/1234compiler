@@ -24,6 +24,8 @@ enum { ATTR_void, ATTR_int, ATTR_null, ATTR_string, ATTR_struct,
 
    using attr_bitset = bitset<ATTR_bitset_size>;
 
+   
+
 struct location {
    size_t filenr;
    size_t linenr;
