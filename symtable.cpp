@@ -72,15 +72,8 @@ symbol* find_ident(astree* node){
     return sym; 
 }
 /**/ 
-bool check_primative_type(astree* node){
-    bool flag = false; 
-    for(auto i = 0; i < ATTR_function;i++){
-        if(node->attributes[i] == 1){
-            flag = true; 
-            break; 
-        }
-    }
-    return flag; 
+bool check_primative_type(astree* left, astree* right){
+    return left->attributes == right->attributes; 
 }
 void inherit_child_type(astree* parent, astree* child){
     for(auto i = 0; i < ATTR_function; i++){
@@ -109,6 +102,8 @@ void check_type(FILE* out_file, astre* node){
             left->attributes.set(ATTR_void);
             break;
         //integers and characters are treated the same way
+        '=':
+        
         TOK_CHAR:
         TOK_INT:
             if(left != nullptr){
@@ -166,7 +161,12 @@ void check_type(FILE* out_file, astre* node){
             }
 
             break; 
-        TOK_IDENT: 
+        TOK_IDENT:
+            
+            symbol* sym = find_ident(node);
+            if(sym == null){
+                insert_symbol(types,node); 
+            } 
             break;
         INTCON:
         CHARCON: 
