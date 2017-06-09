@@ -39,6 +39,64 @@ insert_symbol(symbol_table* sym_table, astree* node){
     }
 }
 
+string get_attributes(attr_bitset attr) {
+    vector<string> attributes; 
+    string formatted = "";
+
+    if(attr[ATTR_void] == 1)attributes.push_back('void');
+    if(attr[ATTR_int] == 1)attributes.push_back('int');
+    if(attr[ATTR_null] == 1)attributes.push_back('null');
+    if(attr[ATTR_string] == 1)attributes.push_back('string');
+    if(attr[ATTR_struct] == 1)attributes.push_back('struct');
+    if(attr[ATTR_array] == 1)attributes.push_back('array');
+    if(attr[ATTR_function] == 1)attributes.push_back('function');
+    if(attr[ATTR_variable] == 1)attributes.push_back('variable');
+    if(attr[ATTR_field] == 1)attributes.push_back('field');
+    if(attr[ATTR_typeid] == 1)attributes.push_back('typeid');
+    if(attr[ATTR_param] == 1)attributes.push_back('param');
+    if(attr[ATTR_lval] == 1)attributes.push_back('lval');
+    if(attr[ATTR_const] == 1)attributes.push_back('const');
+    if(attr[ATTR_vreg] == 1)attributes.push_back('vreg');
+    if(attr[ATTR_vaddr] == 1)attributes.push_back('vaddr');
+
+    for(auto i = attributes.begin(); i != attributes.end(); ++i){
+        if(i != attributes.end()-1 ){
+            formatted += *i + " ";
+        } else{
+            formatted += *i;
+        }
+    } 
+    return formatted; 
+}
+astree* current = nullptr;
+
+void print_newsymbol(FILE* out, astree* node){
+    auto var_name = node->lexinfo->c_str(); 
+    auto line_num = node->linenr; 
+    auto file_num = node->filenr;
+    auto offset = node->offset;
+    auto block_num = node->blocknum;
+    auto attributes = (get_attributes(node->attributes)).c_str(); 
+    if(node->attributes[ATTR_struct]){
+        fprintf(out, "\n");
+    }else{
+        fprintf(out,"\t"); 
+    }
+    
+    if(node->attributes[ATTR_struct]){
+        current = node; 
+        fprintf(out,"%s (%zu.%zu.%zu) {%zu} struct \"%s\" ",
+            var_name, file_num, line_num, offset, 
+            block_num, current->lexinfo); 
+    }
+    if(node->attributes[ATTR_field]){
+        fprintf(out,"%s (%zu.%zu.%zu) field {%s} ", 
+        var_name, file_num, line_num, offset, current->lexinfo);
+    }
+
+    fprintf (outfile, "%s\n", get_attributes(node->attributes));
+}
+
 /*symbol stack functions */ 
 void enter_block(){
     next_block++;
@@ -93,11 +151,19 @@ void inherit_parent_type(astree* parent){
      
 }
 
-void inherit_child_type(astree* parent){
+void inherit_child_type(astree* parent, astree* child) {
+    for(size_t i = 0; i < ATTR_function; i++) {
+         if (child->attribute[i] == 1) {
+             parent->attributes.set(i); 
+        }   
+     }
+
+}
+void inherit_children_type(astree* parent){
     if(!parent->children.empty()){
         for(auto i = parent->children.begin(); i != parent->children.end(); ++i){
-            for(size_t j = 0; i < ATTR_function; j++){
-                if(i->attribute[j] == 1){
+            for(size_t j = 0; j < ATTR_function; j++){
+                if(i->attributes[j] == 1){
                     parent->attributes.set(j); 
                 }   
             }
@@ -124,7 +190,41 @@ bool check_primative_type(astree* left, astree* right){
     return true; 
 }
 
+bool check_base_type(astree* node) {
+        if(node->attributes[ATTR_int] || node->attributes[ATTR_struct]) {
+            return false; 
+        }
+    return true;
+}
 
+void check_block() {
+    if (node->symbol == TOK_BLOCK) {
+        enter_block();
+    }
+
+    node->block_nr = next_block;
+
+    for (auto child = node->children.begin(); 
+        child != node->children.end(); ++child) {
+        check_block(child);
+    }
+}
+
+void handle_function(FILE* out, astree* node) {
+    node->attributes.set(ATTR_function);
+
+    /*which part of the symbol stack?*/
+    insert_symbol(symbol_stack[0], node->children[0]->children[0]);
+    
+    auto param = node->children[1];
+
+    for (auto c = param.begin(); i != param.end(); ++param) {
+        c->children[0]->attributes.set(ATTR_variable);
+        c->children[0]->attributes.set(ATTR_lval);
+        c->children[0]->attributes.set(ATTR_param);
+    }
+
+}
 void check_type(FILE* out_file, astree* node){
     
     symbol* sym; 
@@ -137,22 +237,61 @@ void check_type(FILE* out_file, astree* node){
             node->attributes.set(ATTR_void);
             break;
         //integers and characters are treated the same way
-        '=':
-            break;
+        '+':
         '-':
-            break;
+            node->attributes.set(ATTR_int);
+            node->attributes.set(ATTR_vreg);
+
+            if (node->children.size() == 1) {
+                if (!node->children[0].attributes[ATTR_int]) {
+                    //print error message
+                }
+            }
+
+            if (node->children.size() == 2) {
+                if (!node->children[0].attributes[ATTR_int] ||
+                    !node->children[1].attributes[ATTR_int]) {
+                    //print an error message
+                }
+            }
+            break;  
         '*':
-            break;
         '/':
-            break;
         '%':
+            node->attributes.set(ATTR_int);
+            node->attributes.set(ATTR_vreg);
+
+            if (node->children.size() == 2) {
+                if (!node->children[0].attributes[ATTR_int] ||
+                    !node->children[1].attributes[ATTR_int]) {
+                    //print an error message
+                }
+            }
             break;
         '!':
-            break; 
+            node->attributes.set(ATTR_int);
+            node->attributes.set(ATTR_vreg);
+
+            if (node->children.size() == 1) {
+                if (!node->children[0].attributes[ATTR_int]) {
+                    //print error message
+                }
+            }
+            break;
+        '=':
+            if (node->children.size() == 2) {
+                if (node.children[0].attributes[ATTR_lval] && 
+                    node.children[1].attributes[ATTR_vreg]) {
+                    inherit_child_type(node, node->children[0]);
+                    node->attributes.set(ATTR_vreg);
+                }
+            }
+
+            break;
         TOK_CHAR:
         TOK_INT:
-            node->attribues.set(ATTR_int);
-            inherit_parent_typ(node); 
+            node->attributes.set(ATTR_int);
+            inherit_parent_type(node); 
             break;
         TOK_STRING:
             node->attributes.set(ATTR_string);
@@ -160,17 +299,17 @@ void check_type(FILE* out_file, astree* node){
             break;
         TOK_NEWSTRING:
             node->attributes.set(ATTR_string);
-            node->attribuites.set(ATTR_vreg); 
+            node->attributes.set(ATTR_vreg); 
             break;
         TOK_STRUCT:
-            node->attribute.set(ATTR_struct); 
+            node->attributes.set(ATTR_struct); 
             insert_symbol(types,node);
-            // we need to add a print function here
+            print_newsymbol(symfile, node);
             sym = find_table_ident(types,node);
             sym->fields = new symbol_table; 
             for(auto i = node->children.begin(); i != children.end(); ++i){
                insert_symbol(sym->fields,*i);
-               //print here  
+               print_newsymbol(symfile, node);
             }
             break;
         TOK_NULL:
@@ -179,13 +318,9 @@ void check_type(FILE* out_file, astree* node){
             break;
         
         TOK_NEW:
-            inherit_child_type(node); 
+            inherit_children_type(node); 
             break;
-        
-        TOK_ARRAY:
-            break;
-        TOK_DECLID: 
-            break;
+    
         TOK_VARDECL: 
             node->children[0].attributes.set(ATTR_lval);
             node->children[1].attributes.set(ATTR_variable);
@@ -203,7 +338,7 @@ void check_type(FILE* out_file, astree* node){
         TOK_NE:
         TOK_LT:
         TOK_EQ: 
-            if(check_primitive(node->children[0],node->children[1])){
+            if(check_primitive_type(node->children[0],node->children[1])){
                 node->attributes.set(ATTR_int); 
                 node->attributes.set(ATTR_vreg); 
             }else{
@@ -234,45 +369,58 @@ void check_type(FILE* out_file, astree* node){
         TOK_IF:
         TOK_IFELSE:
         TOK_WHILE:
-            if(!left.attributes[ATTR_int]){
+            if(!node->attributes[ATTR_int]){
                 //print an error 
             }
             break;
         TOK_RETURN:
-            
-            //???????
+            inherit_child_type(node, node->children[0]);
             break;  
-        TOK_ELSE:
-            break; 
-        TOK_BLOCK: 
-            break;
-        TOK_CALL: 
-            break;
-        TOK_INITDECL:
-            break;
         TOK_RETURNVOID:
+            node->attributes.set(ATTR_void);
+            break;
+        TOK_NEWARRAY:
+            node->attributes.set(ATTR_vreg);
+            
+            if (node->children[0].attributes[ATTR_string]) {
+                node->attributes.set(ATTR_int); 
+                node->attributes.set(ATTR_string);
+            }  
+
+            if (check_base_type(node->children[0])) {
+                 inherit_child_type(node, node->children[0]);
+                 node->attributes.set(ATTR_array);
+            }
+            break;
+        TOK_TYPEID:
+            node->attributes.set(ATTR_typeid); 
+            break;
+        TOK_BLOCK: 
+            check_block(node);
+            exit_block();
             break;
         TOK_INDEX:
+            node->attributes.set(ATTR_lval);
+            node->attributes.set(ATTR_vaddr);
+
+            if (node->children[0].attributes[ATTR_string]) {
+                node->attributes.set(ATTR_int); 
+                node->attributes.set(ATTR_string);
+            }  
             break;
         TOK_POS:
             break;
         TOK_NEG:
             break;
-        TOK_NEWARRAY:
-            node->attributes.set(ATTR_array);
-            node->attributes.set(ATTR_vreg);
-            inherit_child_type(node,left); 
+        TOK_CALL: 
             break;
-        TOK_TYPEID:
-            node->attribute.set(ATTR_typeid); 
+        TOK_ARRAY:
+            node->attributes.set(ATTR_vaddr);
+            node->attributes.set(ATTR_lval);
+            break;
+        TOK_DECLID: 
             break;
         TOK_FIELD:
-            break;
-        TOK_ORD:
-            break;
-        TOK_CHR:
-            break;
-        TOK_ROOT: 
             break;
         TOK_FUNCTION:
             break;
@@ -281,9 +429,6 @@ void check_type(FILE* out_file, astree* node){
         TOK_PROTOTYPE: 
             break; 
         
-        
-
-
     }
 
 }
